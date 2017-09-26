@@ -27,6 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "convert_json.h"
 #include "exceptions.h"
 #include "porting.h"
+#include "convert_json.h"
 
 static bool parseDependsLine(std::istream &is,
 		std::string &dep, std::set<char> &symbols)
@@ -417,7 +418,7 @@ bool ModMetadata::save(const std::string &root_path)
 	}
 
 	bool w_ok = fs::safeWriteToFile(root_path + DIR_DELIM + m_mod_name,
-		Json::FastWriter().write(json));
+			fastWriteJson(json));
 
 	if (w_ok) {
 		m_modified = false;
@@ -436,11 +437,14 @@ bool ModMetadata::load(const std::string &root_path)
 		return false;
 	}
 
-	Json::Reader reader;
 	Json::Value root;
-	if (!reader.parse(is, root)) {
+	Json::CharReaderBuilder builder;
+	builder.settings_["collectComments"] = false;
+	std::string errs;
+
+	if (!Json::parseFromStream(builder, is, &root, &errs)) {
 		errorstream << "ModMetadata[" << m_mod_name << "]: failed read data "
-			"(Json decoding failure)." << std::endl;
+			"(Json decoding failure). Message: " << errs << std::endl;
 		return false;
 	}
 
